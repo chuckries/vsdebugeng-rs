@@ -1,0 +1,7 @@
+[package]
+name = "vsdebugeng"
+version = "0.1.0"
+authors = ["Chuck Ries <chuck.ries@gmail.com>"]
+
+[dependencies]
+winapi = "0.2.8"

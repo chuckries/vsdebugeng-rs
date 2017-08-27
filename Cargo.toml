@@ -1,0 +1,13 @@
+[package]
+name = "vsdebugeng_rust"
+version = "0.1.0"
+authors = ["Chuck Ries <chuck.ries@gmail.com>"]
+
+[lib]
+crate-type = ["dylib"]
+
+[dependencies]
+
+[dependencies.vsdebugeng]
+path = "vsdebugeng"
+version = "0.1.0"

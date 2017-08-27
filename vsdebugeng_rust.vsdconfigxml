@@ -1,0 +1,24 @@
+<Configuration xmlns="http://schemas.microsoft.com/vstudio/vsdconfig/2008">
+
+  <!--TODO: If you copy the sample, ensure to regenerate the GUIDs in this file. This
+  can be done with the 'Create GUID' tool ('Tools->Create GUID' in Visual Sudio or 
+  guidgen.exe from the command line). -->
+
+  <NativeComponent
+    ComponentId="4882f903-186c-4c7f-ab51-639f9c6732ec"
+    ComponentLevel="9995000"
+    ModuleName="vsdebugeng_rust.dll">
+    <!--NOTE: For more information on ComponentLevel, see the 'Component Levels' section of readme.docx-->
+
+    <Class Name="MyCallStackFilter" ClassId="bd052ba2-cea9-406b-825d-f06b6fb61a32">
+
+      <Implements>
+        <InterfaceGroup>
+          <NoFilter/>
+          <Interface Name="IDkmCallStackFilter"/>
+        </InterfaceGroup>
+      </Implements>
+    </Class>
+  
+  </NativeComponent>
+</Configuration>
