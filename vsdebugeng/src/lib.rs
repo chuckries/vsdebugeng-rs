@@ -18,6 +18,20 @@ RIDL!(
     }
 );
 
+//"39738b1d-2e90-4164-a21c-749be02f9a96"
+DEFINE_GUID!(IID_IDkmDisposableDataItem, 0x39738b1d, 0x2e90, 0x4164, 0xa2, 0x1c, 0x74, 0x9b, 0xe0, 0x2f, 0x9a, 0x96);
+RIDL!(
+    interface IDkmDisposableDataItem(IDkmDisposableDataItemVtbl): IUnknown(IUnknownVtbl) {
+        fn OnClose(&mut self) -> HRESULT
+    }
+);
+
+#[repr(C)]
+pub struct NativeDkmDataItem {
+    pub pValue: *const IUnknown,
+    pub Id: GUID
+}
+
 #[repr(C)]
 struct NativeCriticalSection {
     debugInfo: usize,

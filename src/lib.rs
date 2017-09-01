@@ -1,6 +1,7 @@
 #![allow(bad_style)]
 
 use vsdebugeng::*;
+use std::ptr;
 
 extern crate vsdebugeng;
 
@@ -116,4 +117,120 @@ static mut classFactory: IClassFactory = IClassFactory {
 #[no_mangle]
 pub unsafe extern "system" fn DllGetClassObject(rclsid: REFCLSID, riid: REFIID, ppvObject: *mut *mut c_void) -> HRESULT {
     classFactory.QueryInterface(riid, ppvObject)
+}
+
+#[repr(C)]
+pub struct DataItem<T: DkmDataItem> {
+    vtbl: IDkmDisposableDataItem,
+    cRef: u32,
+    data: T
+}
+
+extern "system" fn DataItemQueryInterface<T>(pUnk: LPUNKNOWN, riid: REFIID, ppvObject: *mut *mut c_void) -> HRESULT {
+    S_OK
+}
+
+extern "system" fn DataItemAddRef<T>(pUnk: LPUNKNOWN) -> ULONG {
+    1
+}
+
+extern "system" fn DataItemRelease<T>(pUnk: LPUNKNOWN) -> ULONG {
+    1
+}
+
+unsafe extern "system" fn DataItemOnClose<T: DkmDataItem>(pUnk: *mut IDkmDisposableDataItem) -> HRESULT {
+    let imp: &mut DataItem<T> = &mut *(pUnk as *mut DataItem<T>);
+    let hr = imp.data.OnClose();
+    hr
+}
+
+impl<T: DkmDataItem> DataItem<T> {
+    fn new(data: T) -> DataItem<T> {
+        DataItem {
+            vtbl: IDkmDisposableDataItem {
+                lpVtbl: &IDkmDisposableDataItemVtbl {
+                    parent: IUnknownVtbl {
+                        QueryInterface: DataItemQueryInterface::<T>,
+                        AddRef: DataItemAddRef::<T>,
+                        Release: DataItemRelease::<T>
+                    },
+                    OnClose: DataItemOnClose::<T>
+                } as *const IDkmDisposableDataItemVtbl
+            },
+            cRef: 1,
+            data: data
+        }
+    }
+}
+
+pub trait DkmDataItem {
+    fn iid() -> IID;
+    fn OnClose(&mut self) -> HRESULT {
+        S_OK
+    }
+}
+
+fn ProcDkmSetDataItem(item: *const NativeDkmDataItem) -> HRESULT {
+    S_OK
+}
+
+fn ProcDkmGetDataItem(id: REFGUID, ppUnk: *mut *mut IUnknown) -> HRESULT {
+    S_OK
+}
+
+fn SetDataItem<T: DkmDataItem>(item: T) -> HRESULT {
+    let pDataItem = Box::into_raw(Box::new(DataItem::new(item))) as *mut IUnknown;
+
+    let hr = ProcDkmSetDataItem(&NativeDkmDataItem {
+        pValue: pDataItem,
+        Id: T::iid()
+    });
+
+    hr
+}
+
+fn GetDataItem<'a, T: DkmDataItem>() -> Option<&'a T> {
+    let mut pUnk: *mut IUnknown = std::ptr::null_mut();
+    let hr = ProcDkmGetDataItem(&T::iid(), &mut pUnk);
+
+    if hr == S_OK {
+        unsafe { Some(& *(pUnk as *mut T)) }
+    } else {
+        None
+    }
+}
+
+pub struct MyDataItem {
+    num: u32
+}
+
+DEFINE_GUID!(GUID_NULL, 0x00000000, 0x0000, 0x0000, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+
+impl DkmDataItem for MyDataItem {
+    fn iid() -> IID {
+        GUID_NULL
+    }
+}
+
+#[test]
+fn data_item_test() {
+    let dataItem = MyDataItem {
+        num: 4
+    };
+
+    let hr = SetDataItem(dataItem);
+    assert_eq!(S_OK, hr);
+
+    let otherDataItem = GetDataItem::<MyDataItem>();
+}
+
+struct A;
+
+#[test]
+fn test_option() {
+    let a: A = A;
+
+    let opt = Some(&a);
+
+    let thing = opt.unwrap();
 }
