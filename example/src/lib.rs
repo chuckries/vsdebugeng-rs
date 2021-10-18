@@ -114,7 +114,7 @@ struct IDkmCallStackFilter_abi(
     pub unsafe extern "system" fn(this: RawPtr, iid: &Guid, interface: *mut RawPtr) -> HRESULT,
     pub unsafe extern "system" fn(this: RawPtr) -> u32,
     pub unsafe extern "system" fn(this: RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: RawPtr, pStackContext: *mut DkmStackContext_Native, pInput: *mut DkmStaclkWalkFrame_Native, pResult: *mut NativeDkmArray<RawPtr>) -> HRESULT
+    pub unsafe extern "system" fn(this: RawPtr, pStackContext: *mut vsdebugeng::CallStack::DkmStackContext, pInput: *mut vsdebugeng::CallStack::DkmStackWalkFrame, pResult: *mut DkmArray<*mut vsdebugeng::CallStack::DkmStackWalkFrame>) -> HRESULT
 );
 
 #[repr(C)]
@@ -187,10 +187,10 @@ impl MyFrameFilter {
         (*this).Relese()
     }
 
-    unsafe extern "system" fn FilterNextFrame_abi(this: RawPtr, pStackContext: *mut DkmStackContext_Native, pInput: *mut DkmStaclkWalkFrame_Native, pResult: *mut NativeDkmArray<RawPtr>) -> HRESULT {
+    unsafe extern "system" fn FilterNextFrame_abi(this: RawPtr, pStackContext: *mut vsdebugeng::CallStack::DkmStackContext, pInput: *mut vsdebugeng::CallStack::DkmStackWalkFrame, pResult: *mut DkmArray<*mut vsdebugeng::CallStack::DkmStackWalkFrame>) -> HRESULT {
         if pInput.is_null() {
 
-            let mut string: RawPtr = std::ptr::null_mut();
+            let mut string: *mut vsdebugeng::DkmString = std::ptr::null_mut();
 
             let message = "[hello from rust]";
             ProcDkmString1(
@@ -200,14 +200,14 @@ impl MyFrameFilter {
                 &mut string
             );
 
-            let mut frame: RawPtr = std::ptr::null_mut();
+            let mut frame: *mut vsdebugeng::CallStack::DkmStackWalkFrame = std::ptr::null_mut();
 
             ProcA0BA43B79BBE61B6ED073DE327837C99(
-                (*pStackContext).thread,
+                (*pStackContext).Thread,
                 std::ptr::null_mut(),
                 0,
                 0,
-                0,
+                vsdebugeng::CallStack::DkmStackWalkFrameFlags::None,
                 string,
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
@@ -242,79 +242,7 @@ pub struct IUnknown_abi(
     pub unsafe extern "system" fn(this: RawPtr) -> u32,
 );
 
-#[repr(C)]
-struct NativeXapiDispatcherObjectBase {
-    vtable: *const IUnknown_abi,
-    count: i32,
-    flags: i32,
-    type_id: *const Guid,
-    object_gc_handle: *const std::ffi::c_void,
-}
-
-#[repr(C)]
-struct NativeXapiDataContainer {
-    native_base: NativeXapiDispatcherObjectBase,
-    data_container_map: *const std::ffi::c_void,
-    creator: *const std::ffi::c_void,
-    create_event_position: *const std::ffi::c_void,
-    lock: NativeCriticalSection,
-}
-
-#[repr(C)]
-struct NativeCriticalSection {
-    debug_info: *const std::ffi::c_void,
-    lock_count: i32,
-    recursion_count: i32,
-    owning_thread: *const std::ffi::c_void,
-    lock_sempahore: *const std::ffi::c_void,
-    spin_count: *const std::ffi::c_void,
-}
-
-#[repr(C)]
-struct DkmStackContext_Native {
-    native_base: NativeXapiDataContainer,
-    inspection_session: *const std::ffi::c_void,
-    thread: RawPtr,
-    filter_options: i32,
-    format_options: DkmFrameFormatOptions,
-    thread_context: *const std::ffi::c_void,
-    unique_id: Guid,
-    extended_data: *const std::ffi::c_void,
-}
-
-#[repr(C)]
-struct DkmStaclkWalkFrame_Native {
-    native_base: NativeXapiDataContainer,
-    thread: RawPtr,
-    instruction_ddress: RawPtr,
-    frame_base: u64,
-    frame_size: u32,
-    flags: i32,
-    description: RawPtr,
-    register: RawPtr,
-    annotations: RawPtr,
-    extended_data: RawPtr,
-}
-
-#[repr(C)]
-struct DkmFrameFormatOptions {
-    argument_flags: i32,
-    frame_name_format: i32,
-    evaluation_flags: i32,
-    timeout: u32,
-    radix: u32,
-}
-
-#[repr(transparent)]
-struct DkmStackContext(*mut DkmStackContext_Native);
-
-impl DkmStackContext {
-    fn filter_options(&self) -> i32 {
-        unsafe { (*self.0).filter_options }
-    }
-}
-
-struct NativeDkmArray<T> {
+struct DkmArray<T> {
     members: *mut T,
     length: u32
 }
@@ -322,6 +250,15 @@ struct NativeDkmArray<T> {
 #[link(name = "D:\\source\\Concord\\bin\\Debug\\SDK\\import-lib\\x64\\vsdebugeng")]
 extern "system" {
     fn ProcDkmAlloc(bytes: usize, ppMemory: *mut RawPtr) -> HRESULT;
-    fn ProcA0BA43B79BBE61B6ED073DE327837C99(thread: RawPtr, instruction_address: RawPtr, frame_base: u64, frame_size: u32, flags: i32, description: RawPtr, registers: RawPtr, annotation: RawPtr, ppCreatedObject: *mut RawPtr);
-    fn ProcDkmString1(code_page: u32, multi_byte_string: *const u8, size: usize, ppString: *mut RawPtr);
+    fn ProcA0BA43B79BBE61B6ED073DE327837C99(
+        thread: *const vsdebugeng::DkmThread, 
+        instruction_address: *mut vsdebugeng::DkmInstructionAddress, 
+        frame_base: u64, 
+        frame_size: u32, 
+        flags: vsdebugeng::CallStack::DkmStackWalkFrameFlags, 
+        description: *mut vsdebugeng::DkmString, 
+        registers: *mut vsdebugeng::CallStack::DkmFrameRegisters,
+        annotation: *mut vsdebugeng::DkmReadOnlyCollection<*const vsdebugeng::CallStack::DkmStackWalkFrameAnnotation>, 
+        ppCreatedObject: *mut *mut vsdebugeng::CallStack::DkmStackWalkFrame);
+    fn ProcDkmString1(code_page: u32, multi_byte_string: *const u8, size: usize, ppString: *mut *mut vsdebugeng::DkmString);
 }
