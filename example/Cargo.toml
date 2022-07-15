@@ -11,5 +11,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 vsdebugeng = { path = ".." }
-windows = "0.18.0"
+windows = "0.21.1"
 bindings = { path = "bindings" }

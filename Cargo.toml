@@ -9,6 +9,8 @@ edition = "2018"
 name = "vsdebugeng"
 path = "src/vsdebugeng.rs"
 
-[dependencies]
-windows = "0.18.0"
-# bindings = { path = "bindings" }
+[dependencies.windows]
+version = "0.38.0"
+features = [
+
+]

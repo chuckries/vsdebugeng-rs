@@ -6,10 +6,12 @@ fn main() {
             E_NOINTERFACE,
             E_NOTIMPL,
             S_OK,
+            E_INVALIDARG,
         },
         Windows::Win32::System::Com::{
             CoInitializeEx,
             IClassFactory,
         },
+        Windows::Gaming::Input::IGameController,
     };
 }
